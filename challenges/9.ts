@@ -1,44 +1,13 @@
 import {readFileToString} from '../utils/readFileToString';
 
-export const taskSeven = () => {
-  const input = readFileToString('./challenges/inputs/7.txt').split(',').map(x => parseInt(x));
+export const taskNine = () => {
+  const input = readFileToString('./challenges/inputs/9.txt').split(',').map(x => parseInt(x));
 
-  console.log('---level7---');
-  const partOneInputA = Array.from(input);
-  const partOneInputB = Array.from(input);
-  const partOneInputC = Array.from(input);
-  const partOneInputD = Array.from(input);
-  const partOneInputE = Array.from(input);
+  console.log('---level9---');
+  runProgramme(Array.from(input), 1, false);
+  console.log('---level9 part 2---');
+  runProgramme(Array.from(input), 2, false);
 
-  const permutations = permute([0, 1, 2, 3, 4]);
-
-  let highestResult = 0;
-
-  permutations.forEach((permutation) => {
-    const r = runWithPermutation(input, permutation);
-    if (r > highestResult) {
-      highestResult = r;
-    }
-  });
-
-
-  const permutations2 = permute([5, 6, 7, 8, 9]);
-
-  let highestResult2 = 0;
-
-  permutations2.forEach((permutation) => {
-    const r = runWithPermutation(input, permutation, true);
-    if (r > highestResult2) {
-      highestResult2 = r;
-    }
-  });
-
-  console.log('Part one answer:', highestResult);
-  console.log('Part two answer:', highestResult2);
-
-
-  /*const partTwoInput = Array.from(input);
-  console.log(runProgramme(partTwoInput, 5));*/
 };
 
 interface ProgrammeResult {
@@ -51,6 +20,7 @@ interface ProgrammeResult {
 interface OpcodeResult {
   halt?: boolean,
   jump: number,
+  adjustRelativeBase?: number
   overwriteInstruction?: number,
   output?: number,
   inputConsumed?: boolean
@@ -65,20 +35,20 @@ export const runWithPermutation = (input: Array<number>, permutation, loop: bool
   const partOneInputE = Array.from(input);
 
 
-    if(!loop) {
-      const resultA = runProgramme(partOneInputA, 0, true, permutation[0]);
-      const outputA = resultA.output;
-      const resultB = runProgramme(partOneInputB, outputA, true, permutation[1]);
-      const outputB = resultB.output;
-      const resultC = runProgramme(partOneInputC, outputB, true, permutation[2]);
-      const outputC = resultC.output;
-      const resultD = runProgramme(partOneInputD, outputC, true, permutation[3]);
-      const outputD = resultD.output;
-      const resultE = runProgramme(partOneInputE, outputD, true, permutation[4]);
-      const outputE = resultE.output;
+  if (!loop) {
+    const resultA = runProgramme(partOneInputA, 0, true, permutation[0]);
+    const outputA = resultA.output;
+    const resultB = runProgramme(partOneInputB, outputA, true, permutation[1]);
+    const outputB = resultB.output;
+    const resultC = runProgramme(partOneInputC, outputB, true, permutation[2]);
+    const outputC = resultC.output;
+    const resultD = runProgramme(partOneInputD, outputC, true, permutation[3]);
+    const outputD = resultD.output;
+    const resultE = runProgramme(partOneInputE, outputD, true, permutation[4]);
+    const outputE = resultE.output;
 
-      return outputE;
-    }
+    return outputE;
+  }
 
 
   let haltedA = false;
@@ -94,7 +64,7 @@ export const runWithPermutation = (input: Array<number>, permutation, loop: bool
 
   const resultA = runProgramme(partOneInputA, 0, false, permutation[0], 'A');
   let outputA = resultA.output;
-  haltedA= resultA.halted;
+  haltedA = resultA.halted;
   instructionA = resultA.instruction;
 
   console.log('A halted', haltedA);
@@ -113,7 +83,7 @@ export const runWithPermutation = (input: Array<number>, permutation, loop: bool
       // @ts-ignore
       const resultA = runProgramme(partOneInputA, outputE, false, permutation[0], 'A', instructionA);
 
-      if(haltedA) {
+      if (haltedA) {
         console.log('A halted');
         const x = 1;
       }
@@ -151,7 +121,7 @@ export const runWithPermutation = (input: Array<number>, permutation, loop: bool
     includeA = true;
     console.log(outputE);
     console.log(haltedA, haltedB, haltedC, haltedD, haltedE);
-  } while (a<10 && !(haltedA && haltedB && haltedC && haltedD && haltedE));
+  } while (a < 10 && !(haltedA && haltedB && haltedC && haltedD && haltedE));
   return outputE;
 
 };
@@ -181,17 +151,17 @@ const permute = (input) => {
   return x(input);
 };
 
-export const runProgramme = (programme: Array<number>, input = 0, haltOnOutput = false, phaseSetting = 0, letter = '', startingInstruction = 0): ProgrammeResult => {
+export const runProgramme = (programme: Array<number>, input = 0, haltOnOutput = false, phaseSetting = 0, letter = '', startingInstruction = 0, skipPhase: boolean = true): ProgrammeResult => {
   let opcodeResult: OpcodeResult = {jump: 4, halt: false};
   let instruction = startingInstruction;
-  console.log('starting programme', letter, 'at', startingInstruction);
-  let phaseOrInput = startingInstruction > 0 ? 'input' : 'phase';
+  let phaseOrInput = skipPhase ? 'input' : startingInstruction > 0 ? 'input' : 'phase';
+  let relativeBase = 0;
   let output = undefined;
   do {
     if (programme[instruction] === 225) {
       return;
     }
-    opcodeResult = consumeOpcodeAt(instruction, programme, input, phaseSetting, phaseOrInput, letter, haltOnOutput);
+    opcodeResult = consumeOpcodeAt(instruction, programme, input, phaseSetting, phaseOrInput, letter, haltOnOutput, relativeBase);
     instruction += opcodeResult.jump;
     if (opcodeResult.output !== undefined) {
       output = opcodeResult.output;
@@ -202,15 +172,22 @@ export const runProgramme = (programme: Array<number>, input = 0, haltOnOutput =
     if (opcodeResult.overwriteInstruction) {
       instruction = opcodeResult.overwriteInstruction;
     }
-    if (opcodeResult.halt || opcodeResult.output >= 0) {
-      console.log('returning result for', letter, output, 'it was halted = ', opcodeResult.halt);
-      return output >= 0 ? {programme, output, halted: opcodeResult.halt, instruction} : {
-        programme,
-        instruction,
-        output,
-        halted: opcodeResult.halt
-      };
+    if (opcodeResult.adjustRelativeBase) {
+      relativeBase = relativeBase + opcodeResult.adjustRelativeBase;
     }
+    if ((opcodeResult.halt || opcodeResult.output >= 0)) {
+      console.log('returning result for', letter, output, 'it was halted = ', opcodeResult.halt);
+
+      if(opcodeResult.halt) {
+        return output >= 0 && opcodeResult.halt ? {programme, output, halted: opcodeResult.halt, instruction} : {
+          programme,
+          instruction,
+          output,
+          halted: opcodeResult.halt
+        };
+      }
+    }
+
   }
   while (!opcodeResult.halt);
 };
@@ -229,7 +206,7 @@ export const getParameterModes = (_opcode: number): Array<number> => {
   return returnValues;
 };
 
-export const consumeOpcodeAt = (index: number, programmeIn: Array<number>, input = 0, phase: number, phaseOrInput: string, letter = '', haltOnOutput: boolean = false): OpcodeResult => {
+export const consumeOpcodeAt = (index: number, programmeIn: Array<number>, input = 0, phase: number, phaseOrInput: string, letter = '', haltOnOutput: boolean = false, relativeBase = 0): OpcodeResult => {
   const programme = programmeIn;
   const opcodeInstruction = programme[index];
   const opcode = getRealOpcode(opcodeInstruction);
@@ -242,39 +219,64 @@ export const consumeOpcodeAt = (index: number, programmeIn: Array<number>, input
 
   const parameterModes = getParameterModes(opcodeInstruction);
 
-  const opcodeArgs = [
-    parameterModes[0] === 0 ? programme[programme[index + 1]] : programme[index + 1],
-    parameterModes[1] === 0 ? programme[programme[index + 2]] : programme[index + 2],
-    parameterModes[2] === 0 ? programme[index + 3] : programme[index + 3]
-  ];
+  const opcodeArgs = [];
 
-  if (opcode === 21) {
-    return;
+  if(parameterModes[0] === 0) {
+    opcodeArgs[0] = programme[programme[index + 1]];
+  }
+  if(parameterModes[1] === 0) {
+    opcodeArgs[1] = programme[programme[index + 2]];
+  }
+  if(parameterModes[2] === 0) {
+    opcodeArgs[2] = programme[index + 3];
+  }
+
+  if(parameterModes[0] === 1) {
+    opcodeArgs[0] = programme[index + 1];
+  }
+  if(parameterModes[1] === 1) {
+    opcodeArgs[1] = programme[index + 2];
+  }
+  if(parameterModes[2] === 1) {
+    opcodeArgs[2] = programme[index + 3];
+  }
+
+  if(parameterModes[0] === 2) {
+    opcodeArgs[0] = programme[relativeBase + programme[index + 1]];
+  }
+  if(parameterModes[1] === 2) {
+    opcodeArgs[1] = programme[relativeBase + programme[index + 2]];
+  }
+  if(parameterModes[2] === 2) {
+    relativeBase + index + 3;
+    opcodeArgs[2] = programme[index + 3] + relativeBase;
   }
 
   if (opcode === 1) {
+    //console.log('adding', opcodeArgs[0], 'and', opcodeArgs[1], 'putting them into index', opcodeArgs[2], 'value is', opcodeArgs[0] * opcodeArgs[1]);
     programme[opcodeArgs[2]] = opcodeArgs[0] + opcodeArgs[1];
     jump = 4;
   }
-
   if (opcode === 2) {
+    //console.log('multiplying', opcodeArgs[0], 'and', opcodeArgs[1], 'putting them into index', opcodeArgs[2], 'value is', opcodeArgs[0] * opcodeArgs[1]);
     programme[opcodeArgs[2]] = opcodeArgs[0] * opcodeArgs[1];
     jump = 4;
   }
 
   if (opcode === 3) {
+    console.log(opcodeInstruction, opcodeArgs);
     if (phaseOrInput === 'phase') {
-      programme[programme[index + 1]] = phase;
+      programme[opcodeArgs[2]] = phase;
     }
     if (phaseOrInput === 'input') {
-      programme[programme[index + 1]] = input;
+      programme[opcodeArgs[2]] = input;
     }
     jump = 2;
     return {jump, inputConsumed: true, halt: false};
   }
 
   if (opcode === 4) {
-    console.log('halting', letter, 'because of halt on output', haltOnOutput);
+    //console.log('halting', letter, 'because of halt on output', haltOnOutput, 'value is', opcodeArgs[0]);
     return {jump: 2, output: opcodeArgs[0], halt: haltOnOutput};
   }
 
@@ -311,6 +313,10 @@ export const consumeOpcodeAt = (index: number, programmeIn: Array<number>, input
       programme[opcodeArgs[2]] = 1;
     }
     jump = 4;
+  }
+
+  if (opcode === 9) {
+    return {jump: 2, halt: false, adjustRelativeBase: opcodeArgs[0]};
   }
 
   return {jump, halt: false};

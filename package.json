@@ -37,6 +37,7 @@
     "chai": "^4.2.0",
     "deep-equal-in-any-order": "^1.0.21",
     "eslint": "^6.7.2",
+    "iter-tools": "^7.0.0-rc.0",
     "mocha": "^6.2.2",
     "nodemon": "^2.0.1",
     "typescript": "^3.7.3"

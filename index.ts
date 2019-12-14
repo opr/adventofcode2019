@@ -6,6 +6,7 @@ import {taskFive} from './challenges/5';
 import {taskSix} from './challenges/6';
 import {taskSeven} from './challenges/7';
 import {taskEight} from './challenges/8';
+import {taskNine} from './challenges/9';
 
 //taskOne();
 //taskTwo();
@@ -14,4 +15,5 @@ import {taskEight} from './challenges/8';
 //taskFive();
 //taskSix();
 //taskSeven();
-taskEight();
+//taskEight();
+taskNine();
